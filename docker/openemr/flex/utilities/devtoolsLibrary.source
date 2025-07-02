@@ -121,6 +121,7 @@ backupOpenemr() {
 
 # parameter 1 is identifier
 restoreOpenemr() (
+    cd /snapshots
     tar -C /snapshots -xzf "${1}.tgz"
     # need to empty the database before the restore database import
     mariadb-dump --skip-ssl -u "${CUSTOM_ROOT_USER}" --password="${MYSQL_ROOT_PASS}" -h "${MYSQL_HOST}" -P "${CUSTOM_PORT}" --add-drop-table --no-data "${CUSTOM_DATABASE}" |
