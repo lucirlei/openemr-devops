@@ -8,21 +8,22 @@
 # Three: You'll want a /lot/ of room to unpack. An eight-gig instance won't cut it.
 
 mkdir /tmp/backup-ingestion
-cd /tmp/backup-ingestion
-tar -xf $1 -C /tmp/backup-ingestion/ --no-same-owner
+cd /tmp/backup-ingestion || exit 1
+tar -xf "$1" -C /tmp/backup-ingestion/ --no-same-owner
 
-DOCKERID=$(docker ps | grep _openemr | cut -f 1 -d " ")
+# shellcheck disable=2312
+DOCKERID=$(docker ps | grep -- -openemr | cut -f 1 -d " ")
 
 # retrieve site
 mkdir webroot
 tar -zxf openemr.tar.gz -C webroot
 rm openemr.tar.gz
 find webroot -type d -name 'node_modules' -exec rm -rf {} +
-docker cp ${DOCKERID}:/var/www/localhost/htdocs/openemr/sites/default/sqlconf.php webroot/sites/default
-docker cp webroot ${DOCKERID}:/tmp/oe-recovery
+docker cp "${DOCKERID}:/var/www/localhost/htdocs/openemr/sites/default/sqlconf.php" webroot/sites/default
+docker cp webroot "${DOCKERID}:/tmp/oe-recovery"
 
 # straighten out internal permissions
-docker exec -i $(docker ps | grep _openemr | cut -f 1 -d " ") /bin/sh -s << "EOF"
+docker exec -i "${DOCKERID}" /bin/sh -s << "EOF"
 cd /var/www/localhost/htdocs/openemr/sites
 chown -R apache:root default-recovery
 chmod -R 400 default-recovery
@@ -35,13 +36,14 @@ EOF
 
 # restore database
 gzip -d openemr.sql.gz
-echo 'USE openemr;' | cat - openemr.sql | docker exec -i ${DOCKERID} /bin/sh -c 'mysql -h"$MYSQL_HOST" -u"$MYSQL_USER" -p"$MYSQL_PASS"'
+# shellcheck disable=2312
+echo 'USE openemr;' | cat - openemr.sql | docker exec -i "${DOCKERID}" /bin/sh -c 'mysql -h"$MYSQL_HOST" -u"$MYSQL_USER" -p"$MYSQL_PASS"'
 rm openemr.sql
 
 # swift kick to PHP
-docker restart ${DOCKERID}
+docker restart "${DOCKERID}"
 
-cd /root
+cd /root || exit 1
 rm -rf /tmp/backup-ingestion
 
 echo Restore operation complete!
