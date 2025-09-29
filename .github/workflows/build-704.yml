@@ -1,30 +1,65 @@
-name: Development 7.0.4 Docker Nightly Build
+name: Build and Publish My Custom OpenEMR Image (with Debug)
 
 on:
   workflow_dispatch:
-  # schedule:
-  #  - cron: '0 2 * * *' # run at 2 AM UTC
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: seu-usuario/openemr-custom
+  OPENEMR_VERSION: '7.0.2'
 
 jobs:
-  build:
-    # Only run from master branch on the main repository
-    if: github.repository_owner == 'openemr' && github.repository == 'lucirlei/openemr-devops' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-22.04
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      - name: Checkout DevOps Repository
+        uses: actions/checkout@v4
+
+      - name: Checkout OpenEMR Source from My Fork
+        uses: actions/checkout@v4
+        with:
+          repository: lucirlei/openemr
+          path: src-openemr
+
+      - name: Log in to Docker Hub
+        uses: actions/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push 7.0.4 docker
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            latest
+            ${{ env.OPENEMR_VERSION }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ================================================================= #
+      # ===== PASSO DE DEBUG ADICIONADO AQUI ===== #
+      - name: DEBUG - List files in workspace
+        run: |
+          echo "================================================="
+          echo "Conteúdo do diretório de trabalho atual:"
+          ls -laR
+          echo "================================================="
+      # ================================================================= #
+
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: "{{defaultContext}}:docker/openemr/7.0.4"
-          tags: openemr/openemr:7.0.4, openemr/openemr:dev, openemr/openemr:next
-          platforms: linux/amd64,linux/arm64
+          context: .
+          file: ./docker/openemr/${{ env.OPENEMR_VERSION }}/Dockerfile
           push: true
-          no-cache: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
