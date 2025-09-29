@@ -5,7 +5,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: lucirlei/openemr-custom
+  IMAGE_NAME: lucirleisantos/openemr-custom
   OPENEMR_VERSION: '7.0.2'
 
 jobs:
@@ -25,11 +25,14 @@ jobs:
           repository: lucirlei/openemr
           path: src-openemr
 
+      # ================================================================= #
+      # ===== CORREÇÃO APLICADA AQUI ===== #
       - name: Log in to Docker Hub
-        uses: actions/login-action@v3
+        uses: docker/login-action@v3 # Corrigido de 'actions/login-action' para 'docker/login-action'
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # ================================================================= #
 
       - name: Extract Docker metadata
         id: meta
@@ -43,15 +46,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ================================================================= #
-      # ===== PASSO DE DEBUG ADICIONADO AQUI ===== #
       - name: DEBUG - List files in workspace
         run: |
           echo "================================================="
           echo "Conteúdo do diretório de trabalho atual:"
           ls -laR
           echo "================================================="
-      # ================================================================= #
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -61,5 +61,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type:gha
+          cache-to: type:gha,mode=max
