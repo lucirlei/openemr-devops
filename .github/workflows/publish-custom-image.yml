@@ -10,7 +10,7 @@ env:
   # TODO: Troque para o seu registro. Ex: ghcr.io
   REGISTRY: docker.io
   # TODO: Troque 'seu-usuario' pelo seu nome de usuário no Docker Hub
-  IMAGE_NAME: seu-usuario/openemr-custom
+  IMAGE_NAME: lucirleisantos/openemr-custom
   # Define a versão do OpenEMR que o Dockerfile usará.
   # Verifique a estrutura de pastas em 'docker/openemr' para ver as versões disponíveis.
   OPENEMR_VERSION: '7.0.2'
